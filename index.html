@@ -1,0 +1,1304 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dashboard Gestão à Vista</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"></script>
+<style>
+  :root {
+    --bg-dark: #0a0e1a;
+    --bg-card: #111827;
+    --bg-card2: #1a2235;
+    --bg-nav: #0d1526;
+    --accent: #3b82f6;
+    --accent2: #6366f1;
+    --verde: #22c55e;
+    --verde-bg: rgba(34,197,94,0.12);
+    --verde-border: rgba(34,197,94,0.4);
+    --amarelo: #f59e0b;
+    --amarelo-bg: rgba(245,158,11,0.12);
+    --amarelo-border: rgba(245,158,11,0.4);
+    --vermelho: #ef4444;
+    --vermelho-bg: rgba(239,68,68,0.12);
+    --vermelho-border: rgba(239,68,68,0.4);
+    --neutro: #64748b;
+    --neutro-bg: rgba(100,116,139,0.12);
+    --neutro-border: rgba(100,116,139,0.4);
+    --text: #e2e8f0;
+    --text-muted: #94a3b8;
+    --border: rgba(255,255,255,0.08);
+    --shadow: 0 4px 24px rgba(0,0,0,0.4);
+    --radius: 14px;
+    --radius-sm: 8px;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { background:var(--bg-dark); color:var(--text); font-family:'Segoe UI',system-ui,sans-serif; min-height:100vh; }
+
+  /* HEADER */
+  .header {
+    background:linear-gradient(135deg, #0d1526 0%, #1a2550 100%);
+    border-bottom:1px solid var(--border);
+    padding:0 2rem;
+    height:70px;
+    display:flex; align-items:center; justify-content:space-between;
+    position:sticky; top:0; z-index:100;
+    box-shadow:0 2px 20px rgba(0,0,0,0.5);
+  }
+  .header-left { display:flex; align-items:center; gap:1rem; }
+  .logo {
+    width:42px; height:42px; border-radius:10px;
+    background:linear-gradient(135deg,#3b82f6,#6366f1);
+    display:flex; align-items:center; justify-content:center;
+    font-size:1.3rem; font-weight:900; color:#fff;
+  }
+  .header-title h1 { font-size:1.2rem; font-weight:700; color:#fff; letter-spacing:.02em; }
+  .header-title p { font-size:.75rem; color:var(--text-muted); margin-top:1px; }
+  .header-right { display:flex; align-items:center; gap:1.5rem; }
+  .clock { text-align:right; }
+  .clock .time { font-size:1.4rem; font-weight:700; color:#fff; font-variant-numeric:tabular-nums; }
+  .clock .date { font-size:.72rem; color:var(--text-muted); }
+  .last-update { font-size:.7rem; color:var(--text-muted); text-align:right; }
+  .last-update span { color:var(--verde); font-weight:600; }
+  .btn-autoplay {
+    background:rgba(59,130,246,0.2); border:1px solid rgba(59,130,246,0.4);
+    color:#93c5fd; padding:.4rem .9rem; border-radius:8px; cursor:pointer;
+    font-size:.8rem; transition:all .2s;
+  }
+  .btn-autoplay:hover { background:rgba(59,130,246,0.35); }
+  .btn-autoplay.active { background:rgba(34,197,94,0.2); border-color:rgba(34,197,94,0.4); color:#86efac; }
+
+  /* NAV TABS */
+  .nav-tabs {
+    background:var(--bg-nav);
+    border-bottom:1px solid var(--border);
+    padding:0 2rem;
+    display:flex; gap:.5rem; align-items:center;
+    overflow-x:auto;
+  }
+  .nav-tab {
+    padding:.75rem 1.4rem; cursor:pointer; border:none; background:none;
+    color:var(--text-muted); font-size:.88rem; font-weight:500;
+    border-bottom:2px solid transparent; transition:all .2s;
+    white-space:nowrap;
+  }
+  .nav-tab:hover { color:var(--text); }
+  .nav-tab.active { color:var(--accent); border-bottom-color:var(--accent); font-weight:600; }
+  .nav-tab .tab-icon { margin-right:.4rem; }
+
+  /* FILTERS BAR */
+  .filters-bar {
+    background:var(--bg-nav);
+    padding:.6rem 2rem;
+    display:flex; gap:1rem; align-items:center; flex-wrap:wrap;
+    border-bottom:1px solid var(--border);
+  }
+  .filters-bar label { font-size:.78rem; color:var(--text-muted); white-space:nowrap; }
+  .filters-bar select, .filters-bar input {
+    background:var(--bg-card2); border:1px solid var(--border);
+    color:var(--text); padding:.35rem .75rem; border-radius:var(--radius-sm);
+    font-size:.82rem; cursor:pointer; min-width:130px;
+  }
+  .filters-bar select:focus, .filters-bar input:focus { outline:none; border-color:var(--accent); }
+  .filter-group { display:flex; align-items:center; gap:.5rem; }
+  .badge-counts { display:flex; gap:.6rem; margin-left:auto; }
+  .badge {
+    padding:.3rem .7rem; border-radius:20px; font-size:.75rem; font-weight:700;
+    display:flex; align-items:center; gap:.3rem;
+  }
+  .badge-verde { background:var(--verde-bg); color:var(--verde); border:1px solid var(--verde-border); }
+  .badge-amarelo { background:var(--amarelo-bg); color:var(--amarelo); border:1px solid var(--amarelo-border); }
+  .badge-vermelho { background:var(--vermelho-bg); color:var(--vermelho); border:1px solid var(--vermelho-border); }
+
+  /* MAIN CONTENT */
+  .main { padding:1.5rem 2rem; }
+
+  /* SECTION HEADER */
+  .section-header {
+    display:flex; align-items:center; gap:.8rem; margin-bottom:1.2rem;
+  }
+  .section-icon {
+    width:36px; height:36px; border-radius:9px;
+    display:flex; align-items:center; justify-content:center;
+    font-size:1rem;
+  }
+  .section-header h2 { font-size:1rem; font-weight:700; color:var(--text); }
+  .section-header p { font-size:.76rem; color:var(--text-muted); margin-top:2px; }
+
+  /* KPI GRID */
+  .kpi-grid { display:grid; gap:1rem; margin-bottom:1.5rem; }
+  .kpi-grid-4 { grid-template-columns:repeat(4,1fr); }
+  .kpi-grid-3 { grid-template-columns:repeat(3,1fr); }
+  .kpi-grid-2 { grid-template-columns:repeat(2,1fr); }
+  .kpi-grid-auto { grid-template-columns:repeat(auto-fill,minmax(260px,1fr)); }
+
+  /* KPI CARD */
+  .kpi-card {
+    background:var(--bg-card); border:1px solid var(--border);
+    border-radius:var(--radius); padding:1.1rem 1.2rem;
+    position:relative; overflow:hidden; transition:transform .2s, box-shadow .2s;
+    cursor:default;
+  }
+  .kpi-card:hover { transform:translateY(-2px); box-shadow:var(--shadow); }
+  .kpi-card::before {
+    content:''; position:absolute; top:0; left:0; right:0; height:3px;
+  }
+  .kpi-card.verde { border-left:3px solid var(--verde); }
+  .kpi-card.verde::before { background:linear-gradient(90deg,var(--verde),transparent); }
+  .kpi-card.amarelo { border-left:3px solid var(--amarelo); }
+  .kpi-card.amarelo::before { background:linear-gradient(90deg,var(--amarelo),transparent); }
+  .kpi-card.vermelho { border-left:3px solid var(--vermelho); }
+  .kpi-card.vermelho::before { background:linear-gradient(90deg,var(--vermelho),transparent); }
+  .kpi-card.neutro { border-left:3px solid var(--neutro); }
+  .kpi-card.neutro::before { background:linear-gradient(90deg,var(--neutro),transparent); }
+  .kpi-card.sem-dado { border-left:3px solid #334155; opacity:.7; }
+
+  .kpi-header { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:.7rem; }
+  .kpi-name { font-size:.8rem; color:var(--text-muted); font-weight:500; line-height:1.3; flex:1; }
+  .kpi-farol {
+    width:28px; height:28px; border-radius:50%; display:flex;
+    align-items:center; justify-content:center; font-size:.75rem; flex-shrink:0; margin-left:.5rem;
+  }
+  .farol-verde { background:var(--verde-bg); color:var(--verde); border:1.5px solid var(--verde-border); }
+  .farol-amarelo { background:var(--amarelo-bg); color:var(--amarelo); border:1.5px solid var(--amarelo-border); }
+  .farol-vermelho { background:var(--vermelho-bg); color:var(--vermelho); border:1.5px solid var(--vermelho-border); }
+  .farol-neutro { background:var(--neutro-bg); color:var(--neutro); border:1.5px solid var(--neutro-border); }
+  .farol-nd { background:rgba(51,65,85,0.3); color:#475569; border:1.5px solid #334155; }
+
+  .kpi-value { font-size:1.6rem; font-weight:800; color:#fff; line-height:1; margin-bottom:.4rem; }
+  .kpi-unit { font-size:.75rem; color:var(--text-muted); font-weight:400; margin-left:.2rem; }
+  .kpi-meta { display:flex; gap:1rem; align-items:center; }
+  .kpi-meta-item { font-size:.72rem; color:var(--text-muted); }
+  .kpi-meta-item strong { color:var(--text); font-weight:600; }
+  .kpi-obs {
+    margin-top:.6rem; padding:.4rem .6rem;
+    background:rgba(255,255,255,0.04); border-radius:6px;
+    font-size:.72rem; color:var(--text-muted); line-height:1.4;
+    border-left:2px solid rgba(99,102,241,0.4);
+  }
+  .kpi-area-tag {
+    display:inline-block; padding:.15rem .5rem; border-radius:4px;
+    font-size:.65rem; font-weight:600; letter-spacing:.03em; text-transform:uppercase;
+    background:rgba(99,102,241,0.15); color:#a5b4fc; margin-bottom:.4rem;
+  }
+  .kpi-freq {
+    font-size:.65rem; color:var(--text-muted); text-align:right;
+    background:rgba(255,255,255,0.04); padding:.1rem .4rem; border-radius:4px; margin-left:auto;
+  }
+  .kpi-nodata { color:#475569; font-size:1.1rem; font-weight:700; }
+
+  /* PROGRESS BAR */
+  .progress-bar { margin-top:.6rem; }
+  .progress-track { height:4px; background:rgba(255,255,255,0.08); border-radius:2px; overflow:hidden; }
+  .progress-fill { height:100%; border-radius:2px; transition:width .8s ease; }
+  .prog-verde { background:var(--verde); }
+  .prog-amarelo { background:var(--amarelo); }
+  .prog-vermelho { background:var(--vermelho); }
+
+  /* AREA SECTION */
+  .area-section { margin-bottom:2rem; }
+  .area-header {
+    background:var(--bg-card2); border:1px solid var(--border);
+    border-radius:var(--radius) var(--radius) 0 0;
+    padding:.9rem 1.3rem; display:flex; align-items:center; gap:.8rem;
+  }
+  .area-header-icon {
+    width:32px; height:32px; border-radius:8px;
+    display:flex; align-items:center; justify-content:center; font-size:.9rem;
+  }
+  .area-header-info h3 { font-size:.92rem; font-weight:700; color:#fff; }
+  .area-header-info p { font-size:.74rem; color:var(--text-muted); }
+  .area-body {
+    background:var(--bg-card); border:1px solid var(--border); border-top:none;
+    border-radius:0 0 var(--radius) var(--radius); padding:1.2rem;
+  }
+
+  /* SUMMARY CARDS (top level) */
+  .summary-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:1rem; margin-bottom:1.5rem; }
+  .summary-card {
+    background:var(--bg-card2); border:1px solid var(--border);
+    border-radius:var(--radius); padding:1.1rem 1.3rem;
+    display:flex; align-items:center; gap:1rem;
+  }
+  .summary-icon { font-size:1.8rem; }
+  .summary-num { font-size:2rem; font-weight:900; }
+  .summary-label { font-size:.75rem; color:var(--text-muted); margin-top:2px; }
+
+  /* CHART WRAPPER */
+  .chart-wrapper {
+    background:var(--bg-card); border:1px solid var(--border);
+    border-radius:var(--radius); padding:1.2rem;
+    margin-bottom:1.5rem;
+  }
+  .chart-title { font-size:.85rem; font-weight:600; color:var(--text); margin-bottom:.8rem; }
+  .chart-container { position:relative; height:200px; }
+
+  /* TABLE */
+  .data-table { width:100%; border-collapse:collapse; }
+  .data-table th {
+    background:rgba(255,255,255,0.04); color:var(--text-muted);
+    padding:.6rem .9rem; text-align:left; font-size:.75rem; font-weight:600;
+    text-transform:uppercase; letter-spacing:.05em; border-bottom:1px solid var(--border);
+  }
+  .data-table td {
+    padding:.6rem .9rem; font-size:.82rem; color:var(--text);
+    border-bottom:1px solid rgba(255,255,255,0.04);
+  }
+  .data-table tr:hover td { background:rgba(255,255,255,0.02); }
+
+  /* FAROL PILL */
+  .pill {
+    padding:.2rem .7rem; border-radius:20px; font-size:.72rem; font-weight:700; display:inline-flex; align-items:center; gap:.3rem;
+  }
+  .pill-verde { background:var(--verde-bg); color:var(--verde); border:1px solid var(--verde-border); }
+  .pill-amarelo { background:var(--amarelo-bg); color:var(--amarelo); border:1px solid var(--amarelo-border); }
+  .pill-vermelho { background:var(--vermelho-bg); color:var(--vermelho); border:1px solid var(--vermelho-border); }
+  .pill-na { background:var(--neutro-bg); color:var(--neutro); border:1px solid var(--neutro-border); }
+
+  /* VIEW PANELS */
+  .view-panel { display:none; }
+  .view-panel.active { display:block; }
+
+  /* RESPONSIVE */
+  @media (max-width: 1400px) { .kpi-grid-4 { grid-template-columns:repeat(3,1fr); } }
+  @media (max-width: 1100px) { .kpi-grid-4, .kpi-grid-3 { grid-template-columns:repeat(2,1fr); } .summary-grid { grid-template-columns:repeat(3,1fr); } }
+  @media (max-width: 768px) {
+    .kpi-grid-4, .kpi-grid-3, .kpi-grid-2 { grid-template-columns:1fr; }
+    .summary-grid { grid-template-columns:1fr; }
+    .main { padding:1rem; }
+    .header { padding:0 1rem; }
+    .filters-bar { padding:.5rem 1rem; }
+  }
+
+  /* SCROLLBAR */
+  ::-webkit-scrollbar { width:6px; height:6px; }
+  ::-webkit-scrollbar-track { background:var(--bg-dark); }
+  ::-webkit-scrollbar-thumb { background:#334155; border-radius:3px; }
+  ::-webkit-scrollbar-thumb:hover { background:#475569; }
+
+  /* AUTOPLAY PROGRESS */
+  .autoplay-bar {
+    height:2px; background:rgba(59,130,246,0.2);
+    position:fixed; bottom:0; left:0; right:0; z-index:200;
+  }
+  .autoplay-fill {
+    height:100%; background:linear-gradient(90deg,var(--accent),var(--accent2));
+    width:0%; transition:width linear;
+  }
+
+  /* TICKER (marquee for obs) */
+  .ticker-wrap {
+    background:rgba(59,130,246,0.08); border-top:1px solid rgba(59,130,246,0.15);
+    padding:.35rem 0; overflow:hidden; white-space:nowrap;
+  }
+  .ticker { display:inline-block; animation:ticker 30s linear infinite; padding-left:100%; }
+  @keyframes ticker { from{transform:translateX(0)} to{transform:translateX(-100%)} }
+  .ticker span { margin-right:4rem; font-size:.78rem; color:var(--text-muted); }
+  .ticker span strong { color:var(--accent); }
+
+  /* NO DATA */
+  .no-data-msg {
+    text-align:center; padding:2.5rem; color:var(--text-muted); font-size:.85rem;
+  }
+  .no-data-msg .nd-icon { font-size:2rem; margin-bottom:.5rem; display:block; }
+
+  /* UPLOAD SECTION */
+  .upload-zone {
+    border:2px dashed var(--border); border-radius:var(--radius);
+    padding:2rem; text-align:center; cursor:pointer; transition:.2s;
+    background:rgba(255,255,255,0.02);
+  }
+  .upload-zone:hover { border-color:var(--accent); background:rgba(59,130,246,0.05); }
+  .upload-zone input { display:none; }
+  .upload-zone .u-icon { font-size:2rem; margin-bottom:.7rem; display:block; }
+  .upload-zone p { font-size:.85rem; color:var(--text-muted); }
+  .upload-zone p strong { color:var(--text); }
+
+  .btn-primary {
+    background:linear-gradient(135deg,var(--accent),var(--accent2));
+    color:#fff; border:none; padding:.55rem 1.3rem; border-radius:9px;
+    font-size:.85rem; font-weight:600; cursor:pointer; transition:.2s;
+    display:inline-flex; align-items:center; gap:.4rem;
+  }
+  .btn-primary:hover { opacity:.9; transform:translateY(-1px); }
+
+  .instructions-box {
+    background:var(--bg-card2); border:1px solid var(--border);
+    border-radius:var(--radius); padding:1.3rem; margin-top:1rem;
+  }
+  .instructions-box h4 { font-size:.88rem; font-weight:700; margin-bottom:.8rem; color:var(--accent); }
+  .instructions-box ol, .instructions-box ul { padding-left:1.3rem; }
+  .instructions-box li { font-size:.82rem; color:var(--text-muted); line-height:1.8; }
+  .instructions-box code {
+    background:rgba(99,102,241,0.15); color:#a5b4fc;
+    padding:.1rem .4rem; border-radius:4px; font-size:.8rem;
+  }
+
+  /* GRID 2 cols for charts */
+  .charts-row { display:grid; grid-template-columns:1fr 1fr; gap:1rem; margin-bottom:1.5rem; }
+  @media (max-width:1000px) { .charts-row { grid-template-columns:1fr; } }
+
+  /* Nivel badge */
+  .nivel-badge {
+    font-size:.65rem; font-weight:700; padding:.15rem .5rem; border-radius:4px;
+    text-transform:uppercase; letter-spacing:.04em;
+  }
+  .nivel-gerencial { background:rgba(99,102,241,0.15); color:#a5b4fc; }
+  .nivel-area { background:rgba(59,130,246,0.15); color:#93c5fd; }
+  .nivel-tatico { background:rgba(20,184,166,0.15); color:#5eead4; }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header class="header">
+  <div class="header-left">
+    <div class="logo">G</div>
+    <div class="header-title">
+      <h1>Gestão à Vista</h1>
+      <p>Painel de Indicadores — Operações</p>
+    </div>
+  </div>
+  <div class="header-right">
+    <button class="btn-autoplay" id="btnAutoplay" onclick="toggleAutoplay()">▶ Auto-Rotação</button>
+    <div class="last-update">
+      Última atualização<br>
+      <span id="lastUpdated">—</span>
+    </div>
+    <div class="clock">
+      <div class="time" id="clock">00:00:00</div>
+      <div class="date" id="clockDate">—</div>
+    </div>
+  </div>
+</header>
+
+<!-- NAV TABS -->
+<nav class="nav-tabs" id="navTabs">
+  <button class="nav-tab active" onclick="showView('gerencial')" id="tab-gerencial">
+    <span class="tab-icon">🎯</span>Gerencial
+  </button>
+  <button class="nav-tab" onclick="showView('atendimento')" id="tab-atendimento">
+    <span class="tab-icon">🎧</span>Atendimento
+  </button>
+  <button class="nav-tab" onclick="showView('operacoes')" id="tab-operacoes">
+    <span class="tab-icon">⚙️</span>Op. Serviços
+  </button>
+  <button class="nav-tab" onclick="showView('meridio')" id="tab-meridio">
+    <span class="tab-icon">🏗️</span>Op. Meridio
+  </button>
+  <button class="nav-tab" onclick="showView('tatico')" id="tab-tatico">
+    <span class="tab-icon">📊</span>Tático
+  </button>
+  <button class="nav-tab" onclick="showView('todos')" id="tab-todos">
+    <span class="tab-icon">📋</span>Todos Indicadores
+  </button>
+  <button class="nav-tab" onclick="showView('config')" id="tab-config">
+    <span class="tab-icon">⚙️</span>Atualizar Dados
+  </button>
+</nav>
+
+<!-- FILTERS BAR -->
+<div class="filters-bar" id="filtersBar">
+  <div class="filter-group">
+    <label>Período:</label>
+    <select id="filtroMes" onchange="applyFilters()">
+      <option value="todos">Todos os meses</option>
+    </select>
+  </div>
+  <div class="filter-group">
+    <label>Área:</label>
+    <select id="filtroArea" onchange="applyFilters()">
+      <option value="todos">Todas as áreas</option>
+    </select>
+  </div>
+  <div class="filter-group">
+    <label>Farol:</label>
+    <select id="filtroFarol" onchange="applyFilters()">
+      <option value="todos">Todos</option>
+      <option value="VERDE">🟢 Verde</option>
+      <option value="AMARELO">🟡 Amarelo</option>
+      <option value="VERMELHO">🔴 Vermelho</option>
+      <option value="N/A">⚪ N/A</option>
+    </select>
+  </div>
+  <div class="badge-counts" id="badgeCounts"></div>
+</div>
+
+<!-- TICKER -->
+<div class="ticker-wrap" id="tickerWrap">
+  <div class="ticker" id="ticker"></div>
+</div>
+
+<!-- MAIN -->
+<main class="main" id="mainContent">
+
+  <!-- ======================== VIEW: GERENCIAL ======================== -->
+  <div class="view-panel active" id="view-gerencial">
+    <div class="section-header">
+      <div class="section-icon" style="background:rgba(99,102,241,0.15)">🎯</div>
+      <div>
+        <h2>Visão Gerencial</h2>
+        <p>Indicadores estratégicos — Responsável: Evelyn</p>
+      </div>
+    </div>
+    <!-- Summary -->
+    <div class="summary-grid" id="gerencial-summary"></div>
+    <!-- Charts -->
+    <div class="charts-row">
+      <div class="chart-wrapper">
+        <div class="chart-title">📊 Distribuição por Farol — Gerencial</div>
+        <div class="chart-container"><canvas id="chartGerFarol"></canvas></div>
+      </div>
+      <div class="chart-wrapper">
+        <div class="chart-title">📈 Performance dos Indicadores com Meta</div>
+        <div class="chart-container"><canvas id="chartGerPerf"></canvas></div>
+      </div>
+    </div>
+    <!-- KPI Cards -->
+    <div class="kpi-grid kpi-grid-4" id="gerencial-cards"></div>
+  </div>
+
+  <!-- ======================== VIEW: ATENDIMENTO ======================== -->
+  <div class="view-panel" id="view-atendimento">
+    <div class="section-header">
+      <div class="section-icon" style="background:rgba(59,130,246,0.15)">🎧</div>
+      <div>
+        <h2>Área — Atendimento</h2>
+        <p>Responsável: Alan</p>
+      </div>
+    </div>
+    <div class="summary-grid" id="atd-summary"></div>
+    <div class="charts-row">
+      <div class="chart-wrapper">
+        <div class="chart-title">🎯 SLAs de Atendimento (%)</div>
+        <div class="chart-container"><canvas id="chartAtdSLA"></canvas></div>
+      </div>
+      <div class="chart-wrapper">
+        <div class="chart-title">🚦 Status dos Indicadores</div>
+        <div class="chart-container"><canvas id="chartAtdFarol"></canvas></div>
+      </div>
+    </div>
+    <div class="kpi-grid kpi-grid-auto" id="atd-cards"></div>
+  </div>
+
+  <!-- ======================== VIEW: OPERAÇÕES SERVIÇOS ======================== -->
+  <div class="view-panel" id="view-operacoes">
+    <div class="section-header">
+      <div class="section-icon" style="background:rgba(20,184,166,0.15)">⚙️</div>
+      <div>
+        <h2>Área — Operações Serviços</h2>
+        <p>Responsável: Jonathan</p>
+      </div>
+    </div>
+    <div class="summary-grid" id="ops-summary"></div>
+    <div class="chart-wrapper">
+      <div class="chart-title">📊 SLAs Operações Serviços (%)</div>
+      <div class="chart-container"><canvas id="chartOpsSLA"></canvas></div>
+    </div>
+    <div class="kpi-grid kpi-grid-auto" id="ops-cards"></div>
+  </div>
+
+  <!-- ======================== VIEW: MERIDIO ======================== -->
+  <div class="view-panel" id="view-meridio">
+    <div class="section-header">
+      <div class="section-icon" style="background:rgba(245,158,11,0.15)">🏗️</div>
+      <div>
+        <h2>Área — Operações Meridio</h2>
+        <p>Responsável: Rodrigo</p>
+      </div>
+    </div>
+    <div class="summary-grid" id="mer-summary"></div>
+    <div class="charts-row">
+      <div class="chart-wrapper">
+        <div class="chart-title">📊 Implantações — Fevereiro 2026</div>
+        <div class="chart-container"><canvas id="chartMerImpl"></canvas></div>
+      </div>
+      <div class="chart-wrapper">
+        <div class="chart-title">🚦 Status dos Indicadores</div>
+        <div class="chart-container"><canvas id="chartMerFarol"></canvas></div>
+      </div>
+    </div>
+    <div class="kpi-grid kpi-grid-auto" id="mer-cards"></div>
+  </div>
+
+  <!-- ======================== VIEW: TÁTICO ======================== -->
+  <div class="view-panel" id="view-tatico">
+    <div class="section-header">
+      <div class="section-icon" style="background:rgba(20,184,166,0.15)">📊</div>
+      <div>
+        <h2>Visão Tática</h2>
+        <p>Indicadores operacionais por sub-área</p>
+      </div>
+    </div>
+    <div id="tatico-content"></div>
+  </div>
+
+  <!-- ======================== VIEW: TODOS ======================== -->
+  <div class="view-panel" id="view-todos">
+    <div class="section-header">
+      <div class="section-icon" style="background:rgba(99,102,241,0.15)">📋</div>
+      <div>
+        <h2>Todos os Indicadores</h2>
+        <p>Visão consolidada com filtros</p>
+      </div>
+    </div>
+    <div class="chart-wrapper" style="overflow-x:auto;">
+      <table class="data-table" id="allTable">
+        <thead>
+          <tr>
+            <th>Indicador</th>
+            <th>Nível</th>
+            <th>Área</th>
+            <th>Responsável</th>
+            <th>Período</th>
+            <th>Valor</th>
+            <th>Meta</th>
+            <th>Farol</th>
+            <th>Observação</th>
+          </tr>
+        </thead>
+        <tbody id="allTableBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ======================== VIEW: CONFIG ======================== -->
+  <div class="view-panel" id="view-config">
+    <div class="section-header">
+      <div class="section-icon" style="background:rgba(99,102,241,0.15)">⚙️</div>
+      <div>
+        <h2>Atualização de Dados</h2>
+        <p>Carregue um novo arquivo JSON ou Excel para atualizar o dashboard</p>
+      </div>
+    </div>
+
+    <div style="max-width:700px;">
+      <label class="upload-zone" id="uploadZone">
+        <input type="file" id="fileInput" accept=".json,.xlsx" onchange="handleFileUpload(event)">
+        <span class="u-icon">📁</span>
+        <p><strong>Clique para selecionar</strong> ou arraste o arquivo aqui</p>
+        <p style="margin-top:.4rem;font-size:.75rem;">Suporte: arquivo JSON exportado (dashboard_data.json)</p>
+      </label>
+
+      <div id="uploadStatus" style="margin-top:.8rem; display:none;"></div>
+
+      <div class="instructions-box">
+        <h4>📋 Como atualizar os dados automaticamente</h4>
+        <ol>
+          <li>Preencha a planilha <code>FATO_Lancamentos</code> com os novos lançamentos</li>
+          <li>Execute o script Python: <code>python export_json.py</code> (fornecido separadamente)</li>
+          <li>O script gera o arquivo <code>dashboard_data.json</code></li>
+          <li>Clique no botão acima e selecione o <code>dashboard_data.json</code> gerado</li>
+          <li>O dashboard será atualizado automaticamente</li>
+        </ol>
+        <br>
+        <h4 style="color:#5eead4;">⚡ Atualização avançada (automática em rede)</h4>
+        <ul>
+          <li>Salve o <code>dashboard_data.json</code> em uma pasta compartilhada ou servidor web</li>
+          <li>Configure a URL no campo abaixo para atualização automática a cada 5 minutos</li>
+        </ul>
+        <div style="display:flex;gap:.7rem;margin-top:.8rem;align-items:center;flex-wrap:wrap;">
+          <input type="text" id="jsonUrlInput" placeholder="http://servidor/dashboard_data.json"
+            style="flex:1;background:var(--bg-dark);border:1px solid var(--border);color:var(--text);padding:.45rem .8rem;border-radius:8px;font-size:.82rem;" />
+          <button class="btn-primary" onclick="setJsonUrl()">💾 Salvar URL</button>
+          <button class="btn-primary" style="background:linear-gradient(135deg,#10b981,#059669);" onclick="fetchFromUrl()">🔄 Buscar Agora</button>
+        </div>
+        <div id="urlStatus" style="margin-top:.5rem;font-size:.78rem;color:var(--text-muted);"></div>
+      </div>
+    </div>
+  </div>
+
+</main>
+
+<!-- AUTOPLAY BAR -->
+<div class="autoplay-bar"><div class="autoplay-fill" id="autoplayFill"></div></div>
+
+<script>
+// ====================== EMBEDDED DATA ======================
+let DASHBOARD_DATA = {
+  "DIM_Indicadores": [
+    {"ID_Indicador":"GER001","Indicador":"Status dos Projetos do Ano","Nivel":"Gerencial","Area":"Gerência","Subarea_Responsavel":"Evelyn","Frequencia":"Semanal","Unidade_Entrada":"%","Unidade_Dashboard":"%","Direcao":"Maior_melhor","Meta":100,"Alerta_Amarelo":90,"Alerta_Vermelho":80,"Owner":"Evelyn"},
+    {"ID_Indicador":"GER002","Indicador":"Descrição dos Resultados do Mês","Nivel":"Gerencial","Area":"Gerência","Subarea_Responsavel":"Evelyn","Frequencia":"Mensal","Unidade_Entrada":"Texto","Unidade_Dashboard":"Texto","Direcao":"Neutro","Meta":null,"Alerta_Amarelo":null,"Alerta_Vermelho":null,"Owner":"Evelyn"},
+    {"ID_Indicador":"GER003","Indicador":"Custos Operacionais por Área","Nivel":"Gerencial","Area":"Gerência","Subarea_Responsavel":"Evelyn","Frequencia":"Mensal","Unidade_Entrada":"R$","Unidade_Dashboard":"R$","Direcao":"Menor_melhor","Meta":null,"Alerta_Amarelo":null,"Alerta_Vermelho":null,"Owner":"Evelyn"},
+    {"ID_Indicador":"GER005","Indicador":"CSAT Atendimento","Nivel":"Gerencial","Area":"Gerência","Subarea_Responsavel":"Evelyn","Frequencia":"Trimestral","Unidade_Entrada":"Nota_0_10","Unidade_Dashboard":"%","Direcao":"Maior_melhor","Meta":80,"Alerta_Amarelo":70,"Alerta_Vermelho":60,"Owner":"Evelyn"},
+    {"ID_Indicador":"GER006","Indicador":"CSAT Operacional","Nivel":"Gerencial","Area":"Gerência","Subarea_Responsavel":"Evelyn","Frequencia":"Trimestral","Unidade_Entrada":"Nota_0_10","Unidade_Dashboard":"%","Direcao":"Maior_melhor","Meta":80,"Alerta_Amarelo":70,"Alerta_Vermelho":60,"Owner":"Evelyn"},
+    {"ID_Indicador":"GER007","Indicador":"CSAT Implantação","Nivel":"Gerencial","Area":"Gerência","Subarea_Responsavel":"Evelyn","Frequencia":"Trimestral","Unidade_Entrada":"Nota_0_10","Unidade_Dashboard":"%","Direcao":"Maior_melhor","Meta":80,"Alerta_Amarelo":70,"Alerta_Vermelho":60,"Owner":"Evelyn"},
+    {"ID_Indicador":"ATD001","Indicador":"SLA Médio Atendimento Crítico","Nivel":"Área","Area":"Atendimento","Subarea_Responsavel":"Alan","Frequencia":"Semanal","Unidade_Entrada":"%","Unidade_Dashboard":"%","Direcao":"Maior_melhor","Meta":85,"Alerta_Amarelo":80,"Alerta_Vermelho":75,"Owner":"Alan"},
+    {"ID_Indicador":"ATD002","Indicador":"% Tickets Resolvidos no Primeiro Contato","Nivel":"Área","Area":"Atendimento","Subarea_Responsavel":"Alan","Frequencia":"Semanal","Unidade_Entrada":"%","Unidade_Dashboard":"%","Direcao":"Maior_melhor","Meta":90,"Alerta_Amarelo":85,"Alerta_Vermelho":80,"Owner":"Alan"},
+    {"ID_Indicador":"ATD003","Indicador":"Clientes que Questionaram Mais de Uma Vez","Nivel":"Área","Area":"Atendimento","Subarea_Responsavel":"Alan","Frequencia":"Semanal","Unidade_Entrada":"Qtd","Unidade_Dashboard":"Qtd","Direcao":"Menor_melhor","Meta":null,"Alerta_Amarelo":null,"Alerta_Vermelho":null,"Owner":"Alan"},
+    {"ID_Indicador":"ATD004","Indicador":"SLA Médio Atendimento (Conteúdo)","Nivel":"Área","Area":"Atendimento","Subarea_Responsavel":"Alan","Frequencia":"Semanal","Unidade_Entrada":"%","Unidade_Dashboard":"%","Direcao":"Maior_melhor","Meta":90,"Alerta_Amarelo":80,"Alerta_Vermelho":70,"Owner":"Alan"},
+    {"ID_Indicador":"ATD005","Indicador":"SLA Médio Atendimento (Plataforma)","Nivel":"Área","Area":"Atendimento","Subarea_Responsavel":"Alan","Frequencia":"Semanal","Unidade_Entrada":"%","Unidade_Dashboard":"%","Direcao":"Maior_melhor","Meta":90,"Alerta_Amarelo":80,"Alerta_Vermelho":70,"Owner":"Alan"},
+    {"ID_Indicador":"OPS_JN01","Indicador":"SLA Processamento de Diários","Nivel":"Área","Area":"Operações Serviços","Subarea_Responsavel":"Jonathan","Frequencia":"Semanal","Unidade_Entrada":"%","Unidade_Dashboard":"%","Direcao":"Maior_melhor","Meta":95,"Alerta_Amarelo":90,"Alerta_Vermelho":85,"Owner":"Jonathan"},
+    {"ID_Indicador":"OPS_JN02","Indicador":"SLA Captura de Novas Ações","Nivel":"Área","Area":"Operações Serviços","Subarea_Responsavel":"Jonathan","Frequencia":"Semanal","Unidade_Entrada":"%","Unidade_Dashboard":"%","Direcao":"Maior_melhor","Meta":95,"Alerta_Amarelo":90,"Alerta_Vermelho":85,"Owner":"Jonathan"},
+    {"ID_Indicador":"OPS_JN03","Indicador":"SLA Entrega de Novas Ações","Nivel":"Área","Area":"Operações Serviços","Subarea_Responsavel":"Jonathan","Frequencia":"Semanal","Unidade_Entrada":"%","Unidade_Dashboard":"%","Direcao":"Maior_melhor","Meta":95,"Alerta_Amarelo":90,"Alerta_Vermelho":85,"Owner":"Jonathan"},
+    {"ID_Indicador":"OPS_JN04","Indicador":"SLA Entrega de Andamentos","Nivel":"Área","Area":"Operações Serviços","Subarea_Responsavel":"Jonathan","Frequencia":"Semanal","Unidade_Entrada":"%","Unidade_Dashboard":"%","Direcao":"Maior_melhor","Meta":95,"Alerta_Amarelo":90,"Alerta_Vermelho":85,"Owner":"Jonathan"},
+    {"ID_Indicador":"OPS_JN05","Indicador":"Qtd de Reclamações por Produto","Nivel":"Área","Area":"Operações Serviços","Subarea_Responsavel":"Jonathan","Frequencia":"Semanal","Unidade_Entrada":"Qtd","Unidade_Dashboard":"Qtd","Direcao":"Menor_melhor","Meta":null,"Alerta_Amarelo":null,"Alerta_Vermelho":null,"Owner":"Jonathan"},
+    {"ID_Indicador":"MER001","Indicador":"Qtd implantações novas no mês","Nivel":"Área","Area":"Operações Meridio","Subarea_Responsavel":"Rodrigo","Frequencia":"Semanal","Unidade_Entrada":"Qtd","Unidade_Dashboard":"Qtd","Direcao":"Neutro","Meta":null,"Alerta_Amarelo":null,"Alerta_Vermelho":null,"Owner":"Rodrigo"},
+    {"ID_Indicador":"MER002","Indicador":"Qtd implantações finalizadas no mês","Nivel":"Área","Area":"Operações Meridio","Subarea_Responsavel":"Rodrigo","Frequencia":"Semanal","Unidade_Entrada":"Qtd","Unidade_Dashboard":"Qtd","Direcao":"Neutro","Meta":null,"Alerta_Amarelo":null,"Alerta_Vermelho":null,"Owner":"Rodrigo"},
+    {"ID_Indicador":"MER003","Indicador":"SLA médio de implantação","Nivel":"Área","Area":"Operações Meridio","Subarea_Responsavel":"Rodrigo","Frequencia":"Mensal","Unidade_Entrada":"%","Unidade_Dashboard":"%","Direcao":"Maior_melhor","Meta":90,"Alerta_Amarelo":85,"Alerta_Vermelho":80,"Owner":"Rodrigo"},
+    {"ID_Indicador":"MER004","Indicador":"Custo de Implantação","Nivel":"Área","Area":"Operações Meridio","Subarea_Responsavel":"Rodrigo","Frequencia":"Mensal","Unidade_Entrada":"R$","Unidade_Dashboard":"R$","Direcao":"Menor_melhor","Meta":null,"Alerta_Amarelo":null,"Alerta_Vermelho":null,"Owner":"Rodrigo"},
+    {"ID_Indicador":"MER005","Indicador":"Qtd de Clientes Ativos no Mês","Nivel":"Área","Area":"Operações Meridio","Subarea_Responsavel":"Rodrigo","Frequencia":"Mensal","Unidade_Entrada":"Qtd","Unidade_Dashboard":"Qtd","Direcao":"Maior_melhor","Meta":null,"Alerta_Amarelo":null,"Alerta_Vermelho":null,"Owner":"Rodrigo"},
+    {"ID_Indicador":"MER006","Indicador":"Qtd de reclamações procedentes do sistema meridio","Nivel":"Área","Area":"Operações Meridio","Subarea_Responsavel":"Rodrigo","Frequencia":"Semanal","Unidade_Entrada":"Qtd","Unidade_Dashboard":"Qtd","Direcao":"Menor_melhor","Meta":null,"Alerta_Amarelo":null,"Alerta_Vermelho":null,"Owner":"Rodrigo"},
+    {"ID_Indicador":"MER007","Indicador":"Qtd de clientes cancelados no mês","Nivel":"Área","Area":"Operações Meridio","Subarea_Responsavel":"Rodrigo","Frequencia":"Semanal","Unidade_Entrada":"Qtd","Unidade_Dashboard":"Qtd","Direcao":"Menor_melhor","Meta":null,"Alerta_Amarelo":null,"Alerta_Vermelho":null,"Owner":"Rodrigo"},
+    {"ID_Indicador":"MER008","Indicador":"Qtd de implantações em andamento","Nivel":"Área","Area":"Operações Meridio","Subarea_Responsavel":"Rodrigo","Frequencia":"Semanal","Unidade_Entrada":"Qtd","Unidade_Dashboard":"Qtd","Direcao":"Menor_melhor","Meta":null,"Alerta_Amarelo":null,"Alerta_Vermelho":null,"Owner":"Rodrigo"}
+  ],
+  "FATO_Lancamentos": [
+    {"Data_Referencia":"2026-02-11","mês":"fevereiro","ID_Indicador":"ATD001","Valor":75,"Observacao":"teste","Indicador":"SLA Médio Atendimento Crítico","Nivel":"Área","Area":"Atendimento","Subarea_Responsavel":"Alan","Frequencia":"Semanal","Unidade":"%","Meta":85,"Alerta_Amarelo":80,"Alerta_Vermelho":75,"Direcao":"Maior_melhor","Farol":"VERMELHO","Valor_Dashboard":75},
+    {"Data_Referencia":"2026-02-12","mês":"fevereiro","ID_Indicador":"ATD002","Valor":92,"Observacao":"teste","Indicador":"% Tickets Resolvidos no Primeiro Contato","Nivel":"Área","Area":"Atendimento","Subarea_Responsavel":"Alan","Frequencia":"Semanal","Unidade":"%","Meta":90,"Alerta_Amarelo":85,"Alerta_Vermelho":80,"Direcao":"Maior_melhor","Farol":"VERDE","Valor_Dashboard":92},
+    {"Data_Referencia":"2026-02-13","mês":"fevereiro","ID_Indicador":"ATD003","Valor":30,"Observacao":"teste","Indicador":"Clientes que Questionaram Mais de Uma Vez","Nivel":"Área","Area":"Atendimento","Subarea_Responsavel":"Alan","Frequencia":"Semanal","Unidade":"Qtd","Meta":0,"Alerta_Amarelo":0,"Alerta_Vermelho":0,"Direcao":"Menor_melhor","Farol":"N/A","Valor_Dashboard":30},
+    {"Data_Referencia":"2026-02-01","mês":"fevereiro","ID_Indicador":"ATD004","Valor":87,"Observacao":"teste","Indicador":"SLA Médio Atendimento (Conteúdo)","Nivel":"Área","Area":"Atendimento","Subarea_Responsavel":"Alan","Frequencia":"Semanal","Unidade":"%","Meta":90,"Alerta_Amarelo":80,"Alerta_Vermelho":70,"Direcao":"Maior_melhor","Farol":"AMARELO","Valor_Dashboard":87},
+    {"Data_Referencia":"2026-02-15","mês":"fevereiro","ID_Indicador":"ATD005","Valor":70,"Observacao":"teste","Indicador":"SLA Médio Atendimento (Plataforma)","Nivel":"Área","Area":"Atendimento","Subarea_Responsavel":"Alan","Frequencia":"Semanal","Unidade":"%","Meta":90,"Alerta_Amarelo":80,"Alerta_Vermelho":70,"Direcao":"Maior_melhor","Farol":"VERMELHO","Valor_Dashboard":70},
+    {"Data_Referencia":"2026-03-15","mês":"março","ID_Indicador":"ATD002","Valor":89,"Observacao":"teste","Indicador":"% Tickets Resolvidos no Primeiro Contato","Nivel":"Área","Area":"Atendimento","Subarea_Responsavel":"Alan","Frequencia":"Semanal","Unidade":"%","Meta":90,"Alerta_Amarelo":85,"Alerta_Vermelho":80,"Direcao":"Maior_melhor","Farol":"AMARELO","Valor_Dashboard":89},
+    {"Data_Referencia":"2026-02-27","mês":"fevereiro","ID_Indicador":"MER001","Valor":3,"Observacao":"clientes novos","Indicador":"Qtd implantações novas no mês","Nivel":"Área","Area":"Operações Meridio","Subarea_Responsavel":"Rodrigo","Frequencia":"Semanal","Unidade":"Qtd","Meta":0,"Alerta_Amarelo":0,"Alerta_Vermelho":0,"Direcao":"Neutro","Farol":"N/A","Valor_Dashboard":3},
+    {"Data_Referencia":"2026-02-27","mês":"fevereiro","ID_Indicador":"MER002","Valor":9,"Observacao":"Treinamentos finalizados","Indicador":"Qtd implantações finalizadas no mês","Nivel":"Área","Area":"Operações Meridio","Subarea_Responsavel":"Rodrigo","Frequencia":"Semanal","Unidade":"Qtd","Meta":0,"Alerta_Amarelo":0,"Alerta_Vermelho":0,"Direcao":"Neutro","Farol":"N/A","Valor_Dashboard":9},
+    {"Data_Referencia":"2026-02-27","mês":"fevereiro","ID_Indicador":"MER003","Valor":60,"Observacao":"Recesso e volume impactou no aumento do tempo de implantação","Indicador":"SLA médio de implantação","Nivel":"Área","Area":"Operações Meridio","Subarea_Responsavel":"Rodrigo","Frequencia":"Mensal","Unidade":"%","Meta":90,"Alerta_Amarelo":85,"Alerta_Vermelho":80,"Direcao":"Maior_melhor","Farol":"VERMELHO","Valor_Dashboard":60},
+    {"Data_Referencia":"2026-02-27","mês":"fevereiro","ID_Indicador":"MER004","Valor":3800,"Observacao":"Custo hora por função","Indicador":"Custo de Implantação","Nivel":"Área","Area":"Operações Meridio","Subarea_Responsavel":"Rodrigo","Frequencia":"Mensal","Unidade":"R$","Meta":0,"Alerta_Amarelo":0,"Alerta_Vermelho":0,"Direcao":"Menor_melhor","Farol":"N/A","Valor_Dashboard":3800},
+    {"Data_Referencia":"2026-02-27","mês":"fevereiro","ID_Indicador":"MER005","Valor":126,"Observacao":null,"Indicador":"Qtd de Clientes Ativos no Mês","Nivel":"Área","Area":"Operações Meridio","Subarea_Responsavel":"Rodrigo","Frequencia":"Mensal","Unidade":"Qtd","Meta":0,"Alerta_Amarelo":0,"Alerta_Vermelho":0,"Direcao":"Maior_melhor","Farol":"N/A","Valor_Dashboard":126},
+    {"Data_Referencia":"2026-02-27","mês":"fevereiro","ID_Indicador":"MER006","Valor":26,"Observacao":"Considerando tkts com erro, e Nota Fiscal","Indicador":"Qtd de reclamações procedentes do sistema meridio","Nivel":"Área","Area":"Operações Meridio","Subarea_Responsavel":"Rodrigo","Frequencia":"Semanal","Unidade":"Qtd","Meta":0,"Alerta_Amarelo":0,"Alerta_Vermelho":0,"Direcao":"Menor_melhor","Farol":"N/A","Valor_Dashboard":26},
+    {"Data_Referencia":"2026-02-27","mês":"fevereiro","ID_Indicador":"MER007","Valor":2,"Observacao":null,"Indicador":"Qtd de clientes cancelados no mês","Nivel":"Área","Area":"Operações Meridio","Subarea_Responsavel":"Rodrigo","Frequencia":"Semanal","Unidade":"Qtd","Meta":0,"Alerta_Amarelo":0,"Alerta_Vermelho":0,"Direcao":"Menor_melhor","Farol":"N/A","Valor_Dashboard":2},
+    {"Data_Referencia":"2026-02-27","mês":"fevereiro","ID_Indicador":"MER008","Valor":9,"Observacao":"Em fase de kickoff ou Treinamento","Indicador":"Qtd de implantações em andamento","Nivel":"Área","Area":"Operações Meridio","Subarea_Responsavel":"Rodrigo","Frequencia":"Semanal","Unidade":"Qtd","Meta":0,"Alerta_Amarelo":0,"Alerta_Vermelho":0,"Direcao":"Menor_melhor","Farol":"N/A","Valor_Dashboard":9}
+  ],
+  "last_updated": "2026-03-05 09:32:36"
+};
+
+// ====================== STATE ======================
+let currentView = 'gerencial';
+let autoplayActive = false;
+let autoplayInterval = null;
+let autoplayTimer = null;
+let autoplayIndex = 0;
+const VIEWS = ['gerencial','atendimento','operacoes','meridio','tatico','todos'];
+const AUTOPLAY_DURATION = 15000;
+let filteredData = [];
+let charts = {};
+let activeMes = 'todos';
+let activeArea = 'todos';
+let activeFarol = 'todos';
+let jsonUrlSaved = '';
+
+// ====================== INIT ======================
+window.onload = function() {
+  // Load saved url
+  const saved = localStorage.getItem('dashboardJsonUrl');
+  if (saved) { jsonUrlSaved = saved; document.getElementById('jsonUrlInput').value = saved; }
+  // Load saved data from localStorage
+  const savedData = localStorage.getItem('dashboardData');
+  if (savedData) { try { DASHBOARD_DATA = JSON.parse(savedData); } catch(e) {} }
+  initFilters();
+  renderAll();
+  startClock();
+  updateLastUpdated();
+  // ★ Auto-fetch de dashboard_data.json (GitHub/Vercel: arquivo na mesma pasta)
+  fetchRelativeJson();
+  // Atualiza a cada 5 min automaticamente
+  setInterval(fetchRelativeJson, 5 * 60 * 1000);
+  if (jsonUrlSaved) { setTimeout(()=> setAutoFetch(), 2000); }
+};
+
+// Busca ./dashboard_data.json automaticamente (funciona no GitHub Pages, Vercel, servidor local)
+async function fetchRelativeJson() {
+  try {
+    const resp = await fetch('./dashboard_data.json?t=' + Date.now());
+    if (!resp.ok) return; // silencioso se não encontrar
+    const data = await resp.json();
+    if (data.FATO_Lancamentos && data.DIM_Indicadores) {
+      DASHBOARD_DATA = data;
+      localStorage.setItem('dashboardData', JSON.stringify(data));
+      document.getElementById('filtroMes').innerHTML = '<option value="todos">Todos os meses</option>';
+      document.getElementById('filtroArea').innerHTML = '<option value="todos">Todas as áreas</option>';
+      initFilters();
+      updateLastUpdated();
+      const el = document.getElementById('lastUpdated');
+      if (el) el.style.color = '#22c55e';
+    }
+  } catch(e) {
+    // Arquivo não encontrado localmente — usa dados embutidos
+  }
+}
+
+function startClock() {
+  function update() {
+    const now = new Date();
+    const t = now.toLocaleTimeString('pt-BR');
+    const d = now.toLocaleDateString('pt-BR',{weekday:'long',day:'2-digit',month:'long',year:'numeric'});
+    document.getElementById('clock').textContent = t;
+    document.getElementById('clockDate').textContent = d;
+  }
+  update();
+  setInterval(update, 1000);
+}
+
+function updateLastUpdated() {
+  const el = document.getElementById('lastUpdated');
+  if (DASHBOARD_DATA.last_updated) {
+    el.textContent = DASHBOARD_DATA.last_updated;
+  }
+}
+
+// ====================== FILTERS ======================
+function initFilters() {
+  const meses = [...new Set(DASHBOARD_DATA.FATO_Lancamentos.map(r=>r['mês']).filter(Boolean))];
+  const areas = [...new Set(DASHBOARD_DATA.FATO_Lancamentos.map(r=>r['Area']).filter(Boolean))];
+  const selMes = document.getElementById('filtroMes');
+  const selArea = document.getElementById('filtroArea');
+  // Keep existing "todos"
+  meses.forEach(m=>{
+    const o = document.createElement('option'); o.value=m; o.textContent=m.charAt(0).toUpperCase()+m.slice(1);
+    selMes.appendChild(o);
+  });
+  areas.forEach(a=>{
+    const o = document.createElement('option'); o.value=a; o.textContent=a;
+    selArea.appendChild(o);
+  });
+  applyFilters();
+}
+
+function applyFilters() {
+  activeMes = document.getElementById('filtroMes').value;
+  activeArea = document.getElementById('filtroArea').value;
+  activeFarol = document.getElementById('filtroFarol').value;
+  filteredData = DASHBOARD_DATA.FATO_Lancamentos.filter(r=>{
+    if (activeMes !== 'todos' && r['mês'] !== activeMes) return false;
+    if (activeArea !== 'todos' && r['Area'] !== activeArea) return false;
+    if (activeFarol !== 'todos' && r['Farol'] !== activeFarol) return false;
+    return true;
+  });
+  updateBadges();
+  renderAll();
+}
+
+function updateBadges() {
+  const v = filteredData.filter(r=>r.Farol==='VERDE').length;
+  const a = filteredData.filter(r=>r.Farol==='AMARELO').length;
+  const r = filteredData.filter(r=>r.Farol==='VERMELHO').length;
+  document.getElementById('badgeCounts').innerHTML = `
+    <span class="badge badge-verde">🟢 ${v} Verde</span>
+    <span class="badge badge-amarelo">🟡 ${a} Amarelo</span>
+    <span class="badge badge-vermelho">🔴 ${r} Vermelho</span>
+  `;
+}
+
+// ====================== HELPERS ======================
+function getFarolClass(f) {
+  if (!f || f==='N/A') return 'neutro';
+  return f.toLowerCase();
+}
+function getFarolPill(f) {
+  if (!f || f==='N/A') return `<span class="pill pill-na">⚪ N/A</span>`;
+  const m = {'VERDE':'pill-verde','AMARELO':'pill-amarelo','VERMELHO':'pill-vermelho'};
+  const ic = {'VERDE':'🟢','AMARELO':'🟡','VERMELHO':'🔴'};
+  return `<span class="pill ${m[f]||'pill-na'}">${ic[f]||''} ${f}</span>`;
+}
+function getFarolIcon(f) {
+  const m = {'VERDE':'🟢','AMARELO':'🟡','VERMELHO':'🔴','N/A':'⚪'};
+  return m[f] || '⚪';
+}
+function formatVal(v, u) {
+  if (v===null||v===undefined) return '—';
+  if (u==='R$') return 'R$ '+Number(v).toLocaleString('pt-BR');
+  if (u==='%') return Number(v).toLocaleString('pt-BR')+'%';
+  return Number(v).toLocaleString('pt-BR');
+}
+function getLatestByIndicador(area=null, nivel=null) {
+  let data = DASHBOARD_DATA.FATO_Lancamentos;
+  if (activeMes !== 'todos') data = data.filter(r=>r['mês']===activeMes);
+  if (area) data = data.filter(r=>r['Area']===area);
+  if (nivel) data = data.filter(r=>r['Nivel']===nivel);
+  const byId = {};
+  data.forEach(r=>{
+    const id = r.ID_Indicador;
+    if (!byId[id] || new Date(r.Data_Referencia) > new Date(byId[id].Data_Referencia)) {
+      byId[id] = r;
+    }
+  });
+  return Object.values(byId);
+}
+function getDimByArea(area=null, nivel=null) {
+  let d = DASHBOARD_DATA.DIM_Indicadores;
+  if (area) d = d.filter(x=>x.Area===area);
+  if (nivel) d = d.filter(x=>x.Nivel===nivel);
+  return d;
+}
+function mergeWithDim(lancamentos) {
+  const dimMap = {};
+  DASHBOARD_DATA.DIM_Indicadores.forEach(d=>{ dimMap[d.ID_Indicador]=d; });
+  return lancamentos.map(l=>{
+    const dim = dimMap[l.ID_Indicador] || {};
+    return {...dim, ...l};
+  });
+}
+// Registrar plugin globalmente
+Chart.register(ChartDataLabels);
+
+function destroyChart(id) {
+  if (charts[id]) { charts[id].destroy(); delete charts[id]; }
+}
+function makePieChart(id, labels, values, colors) {
+  destroyChart(id);
+  const ctx = document.getElementById(id);
+  if (!ctx) return;
+  const total = values.reduce((a,b)=>a+b,0);
+  charts[id] = new Chart(ctx, {
+    type:'doughnut',
+    data:{ labels, datasets:[{data:values, backgroundColor:colors, borderWidth:2, borderColor:'#0a0e1a'}] },
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      plugins:{
+        legend:{ position:'right', labels:{ color:'#94a3b8', font:{size:11}, padding:12 } },
+        datalabels:{
+          color:'#fff',
+          font:{ weight:'bold', size:12 },
+          formatter:(value, ctx)=>{
+            if(value===0) return '';
+            const pct = total>0 ? Math.round(value/total*100) : 0;
+            return `${value}\n(${pct}%)`;
+          },
+          textAlign:'center',
+          anchor:'center',
+          align:'center',
+          display:(ctx)=> ctx.dataset.data[ctx.dataIndex] > 0
+        }
+      }
+    }
+  });
+}
+function makeBarChart(id, labels, datasets, opts={}) {
+  destroyChart(id);
+  const ctx = document.getElementById(id);
+  if (!ctx) return;
+  // Formatar rótulos de dados por unidade
+  const unit = opts.unit || '';
+  charts[id] = new Chart(ctx, {
+    type:'bar',
+    data:{ labels, datasets },
+    options:{
+      responsive:true, maintainAspectRatio:false, indexAxis: opts.horizontal ? 'y' : 'x',
+      scales:{
+        x:{ ticks:{color:'#94a3b8',font:{size:11}}, grid:{color:'rgba(255,255,255,0.04)'}, max:opts.maxX },
+        y:{ ticks:{color:'#94a3b8',font:{size:10}}, grid:{color:'rgba(255,255,255,0.06)'}, max:opts.maxY }
+      },
+      plugins:{
+        legend:{ labels:{ color:'#94a3b8', font:{size:11} } },
+        datalabels:{
+          anchor:'end',
+          align:'end',
+          offset: -2,
+          color:'#e2e8f0',
+          font:{ weight:'bold', size:11 },
+          formatter:(value)=>{
+            if(value===null||value===undefined||value===0) return '';
+            if(unit==='R$') return 'R$ '+Number(value).toLocaleString('pt-BR');
+            if(unit==='%'||opts.maxY===110) return value+'%';
+            return Number(value).toLocaleString('pt-BR');
+          },
+          display:(ctx)=> ctx.dataset.data[ctx.dataIndex] > 0
+        }
+      }
+    }
+  });
+}
+
+function buildSummaryCard(icon, num, label, color) {
+  return `<div class="summary-card">
+    <div class="summary-icon">${icon}</div>
+    <div>
+      <div class="summary-num" style="color:${color}">${num}</div>
+      <div class="summary-label">${label}</div>
+    </div>
+  </div>`;
+}
+
+function buildKpiCard(lc, dim) {
+  const hasDado = !!lc;
+  const d = lc || dim || {};
+  const farol = hasDado ? (d.Farol || 'N/A') : 'N/A';
+  const fc = getFarolClass(farol);
+  const valor = hasDado ? formatVal(d.Valor_Dashboard ?? d.Valor, d.Unidade || d.Unidade_Dashboard) : null;
+  const meta = d.Meta && d.Meta !== 0 ? formatVal(d.Meta, d.Unidade || d.Unidade_Dashboard) : null;
+  const farolIcon = {'VERDE':'●','AMARELO':'●','VERMELHO':'●','N/A':'○'}[farol]||'○';
+  const farolClass = {'VERDE':'farol-verde','AMARELO':'farol-amarelo','VERMELHO':'farol-vermelho','N/A':'farol-neutro'}[farol]||'farol-nd';
+  const indName = d.Indicador || d.Indicador || '—';
+  const area = d.Area || '';
+  const freq = d.Frequencia || '';
+  const obs = (hasDado && d.Observacao) ? `<div class="kpi-obs">💬 ${d.Observacao}</div>` : '';
+  // Progress bar
+  let progressHtml = '';
+  if (hasDado && d.Meta && d.Meta>0 && d.Valor_Dashboard !== null && d.Unidade==='%') {
+    const pct = Math.min(100, Math.round((d.Valor_Dashboard/d.Meta)*100));
+    const pClass = fc==='verde'?'prog-verde':fc==='amarelo'?'prog-amarelo':'prog-vermelho';
+    progressHtml = `<div class="progress-bar"><div class="progress-track"><div class="progress-fill ${pClass}" style="width:${pct}%"></div></div></div>`;
+  }
+
+  return `<div class="kpi-card ${hasDado?fc:'sem-dado'}">
+    <div class="kpi-header">
+      <div>
+        ${area ? `<div class="kpi-area-tag">${area}</div>` : ''}
+        <div class="kpi-name">${indName}</div>
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:.3rem;">
+        <div class="kpi-farol ${farolClass}">${farolIcon}</div>
+        ${freq?`<div class="kpi-freq">${freq}</div>`:''}
+      </div>
+    </div>
+    ${hasDado
+      ? `<div class="kpi-value">${valor}<span class="kpi-unit">${d.Unidade||d.Unidade_Dashboard||''}</span></div>
+         <div class="kpi-meta">
+           ${meta ? `<div class="kpi-meta-item">Meta: <strong>${meta}</strong></div>` : '<div class="kpi-meta-item">Sem meta definida</div>'}
+           ${d.Alerta_Amarelo && d.Alerta_Amarelo>0 ? `<div class="kpi-meta-item">⚠️ <strong>${formatVal(d.Alerta_Amarelo, d.Unidade)}</strong></div>` : ''}
+         </div>
+         ${progressHtml}
+         ${obs}`
+      : `<div class="kpi-nodata">Sem dados</div><div class="kpi-meta-item" style="font-size:.72rem;color:var(--text-muted);margin-top:.3rem;">Aguardando lançamento</div>`
+    }
+  </div>`;
+}
+
+// ====================== RENDER ALL ======================
+function renderAll() {
+  renderGerencial();
+  renderAtendimento();
+  renderOperacoes();
+  renderMeridio();
+  renderTatico();
+  renderTodos();
+  updateTicker();
+}
+
+// ====================== GERENCIAL ======================
+function renderGerencial() {
+  const all = getLatestByIndicador(null, 'Gerencial');
+  const total = all.length;
+  const verde = all.filter(r=>r.Farol==='VERDE').length;
+  const amar = all.filter(r=>r.Farol==='AMARELO').length;
+  const verm = all.filter(r=>r.Farol==='VERMELHO').length;
+
+  document.getElementById('gerencial-summary').innerHTML = `
+    ${buildSummaryCard('📊', total, 'Indicadores com dados', '#93c5fd')}
+    ${buildSummaryCard('🟢', verde, 'No target (Verde)', '#22c55e')}
+    ${buildSummaryCard('🔴', verm, 'Abaixo do target (Vermelho)', '#ef4444')}
+  `;
+
+  // Pie chart
+  makePieChart('chartGerFarol',
+    ['Verde','Amarelo','Vermelho','N/A'],
+    [verde, amar, verm, all.filter(r=>r.Farol==='N/A').length],
+    ['#22c55e','#f59e0b','#ef4444','#64748b']
+  );
+
+  // Bar chart - perf
+  const withMeta = all.filter(r=>r.Meta && r.Meta>0 && r.Unidade==='%');
+  if (withMeta.length > 0) {
+    makeBarChart('chartGerPerf',
+      withMeta.map(r=>r.Indicador.length>20?r.Indicador.substring(0,20)+'…':r.Indicador),
+      [
+        {label:'Valor Real', data:withMeta.map(r=>r.Valor_Dashboard), backgroundColor:'rgba(99,102,241,0.7)', borderRadius:4},
+        {label:'Meta', data:withMeta.map(r=>r.Meta), backgroundColor:'rgba(59,130,246,0.3)', borderRadius:4}
+      ],
+      {maxY:110, unit:'%'}
+    );
+  }
+
+  // Cards - all GER from DIM
+  const gerDim = getDimByArea('Gerência', null).filter(d=>d.Nivel==='Gerencial');
+  const fatoMap = {};
+  all.forEach(r=>{ fatoMap[r.ID_Indicador]=r; });
+  let html = '';
+  gerDim.forEach(dim=>{
+    html += buildKpiCard(fatoMap[dim.ID_Indicador]||null, dim);
+  });
+  // Also add any fato GER not in dim
+  all.forEach(r=>{ if(!gerDim.find(d=>d.ID_Indicador===r.ID_Indicador)) html+=buildKpiCard(r,null); });
+  document.getElementById('gerencial-cards').innerHTML = html || '<div class="no-data-msg"><span class="nd-icon">📭</span>Sem dados gerenciais no período</div>';
+}
+
+// ====================== ATENDIMENTO ======================
+function renderAtendimento() {
+  const all = getLatestByIndicador('Atendimento');
+  const total = all.length;
+  const verde = all.filter(r=>r.Farol==='VERDE').length;
+  const verm = all.filter(r=>r.Farol==='VERMELHO').length;
+  const amar = all.filter(r=>r.Farol==='AMARELO').length;
+
+  document.getElementById('atd-summary').innerHTML = `
+    ${buildSummaryCard('🎧', total, 'Indicadores com dados', '#93c5fd')}
+    ${buildSummaryCard('🟢', verde, 'Verde', '#22c55e')}
+    ${buildSummaryCard('🔴', verm, 'Vermelho', '#ef4444')}
+  `;
+
+  // SLA chart
+  const slas = all.filter(r=>r.Unidade==='%' && r.Meta>0);
+  if (slas.length>0) {
+    makeBarChart('chartAtdSLA',
+      slas.map(r=>{const n=r.Indicador; return n.length>22?n.substring(0,22)+'…':n;}),
+      [
+        {label:'Valor (%)', data:slas.map(r=>r.Valor_Dashboard), backgroundColor:slas.map(r=>r.Farol==='VERDE'?'rgba(34,197,94,0.7)':r.Farol==='AMARELO'?'rgba(245,158,11,0.7)':'rgba(239,68,68,0.7)'), borderRadius:5},
+        {label:'Meta (%)', data:slas.map(r=>r.Meta), backgroundColor:'rgba(59,130,246,0.25)', borderColor:'rgba(59,130,246,0.6)', borderWidth:1, borderRadius:5}
+      ],
+      {maxY:110, unit:'%'}
+    );
+  }
+  makePieChart('chartAtdFarol',['Verde','Amarelo','Vermelho','N/A'],[verde,amar,verm,all.filter(r=>r.Farol==='N/A').length],['#22c55e','#f59e0b','#ef4444','#64748b']);
+
+  const dimAtd = getDimByArea('Atendimento');
+  const fatoMap = {};
+  all.forEach(r=>{ fatoMap[r.ID_Indicador]=r; });
+  let html = '';
+  dimAtd.forEach(dim=>{ html += buildKpiCard(fatoMap[dim.ID_Indicador]||null, dim); });
+  document.getElementById('atd-cards').innerHTML = html || '<div class="no-data-msg"><span class="nd-icon">📭</span>Sem dados de Atendimento</div>';
+}
+
+// ====================== OPERAÇÕES SERVIÇOS ======================
+function renderOperacoes() {
+  const all = getLatestByIndicador('Operações Serviços');
+  const total = all.length;
+  const verde = all.filter(r=>r.Farol==='VERDE').length;
+  const verm = all.filter(r=>r.Farol==='VERMELHO').length;
+
+  document.getElementById('ops-summary').innerHTML = `
+    ${buildSummaryCard('⚙️', total, 'Indicadores com dados', '#93c5fd')}
+    ${buildSummaryCard('🟢', verde, 'Verde', '#22c55e')}
+    ${buildSummaryCard('🔴', verm, 'Vermelho', '#ef4444')}
+  `;
+
+  const slas = all.filter(r=>r.Unidade==='%' && r.Meta>0);
+  if (slas.length>0) {
+    makeBarChart('chartOpsSLA',
+      slas.map(r=>r.Indicador.length>22?r.Indicador.substring(0,22)+'…':r.Indicador),
+      [
+        {label:'Valor (%)', data:slas.map(r=>r.Valor_Dashboard), backgroundColor:slas.map(r=>r.Farol==='VERDE'?'rgba(34,197,94,0.7)':r.Farol==='AMARELO'?'rgba(245,158,11,0.7)':'rgba(239,68,68,0.7)'), borderRadius:5},
+        {label:'Meta (%)', data:slas.map(r=>r.Meta), backgroundColor:'rgba(59,130,246,0.25)', borderRadius:5}
+      ],
+      {maxY:110, unit:'%'}
+    );
+  }
+
+  const dimOps = getDimByArea('Operações Serviços');
+  const fatoMap = {};
+  all.forEach(r=>{ fatoMap[r.ID_Indicador]=r; });
+  let html = '';
+  dimOps.forEach(dim=>{ html += buildKpiCard(fatoMap[dim.ID_Indicador]||null, dim); });
+  document.getElementById('ops-cards').innerHTML = html || '<div class="no-data-msg"><span class="nd-icon">📭</span>Sem dados de Operações</div>';
+}
+
+// ====================== MERIDIO ======================
+function renderMeridio() {
+  const all = getLatestByIndicador('Operações Meridio');
+  const total = all.length;
+  const verde = all.filter(r=>r.Farol==='VERDE').length;
+  const verm = all.filter(r=>r.Farol==='VERMELHO').length;
+  const amar = all.filter(r=>r.Farol==='AMARELO').length;
+  const clientes = all.find(r=>r.ID_Indicador==='MER005');
+  const clientesVal = clientes ? clientes.Valor_Dashboard : '—';
+
+  document.getElementById('mer-summary').innerHTML = `
+    ${buildSummaryCard('🏗️', total, 'Indicadores com dados', '#93c5fd')}
+    ${buildSummaryCard('👥', clientesVal, 'Clientes Ativos', '#fbbf24')}
+    ${buildSummaryCard('🔴', verm, 'Vermelho', '#ef4444')}
+  `;
+
+  // Implantações chart
+  const mer1 = all.find(r=>r.ID_Indicador==='MER001');
+  const mer2 = all.find(r=>r.ID_Indicador==='MER002');
+  const mer8 = all.find(r=>r.ID_Indicador==='MER008');
+  makeBarChart('chartMerImpl',
+    ['Novas', 'Finalizadas', 'Em Andamento'],
+    [{
+      label:'Qtd', borderRadius:6,
+      data:[mer1?mer1.Valor_Dashboard:0, mer2?mer2.Valor_Dashboard:0, mer8?mer8.Valor_Dashboard:0],
+      backgroundColor:['rgba(59,130,246,0.7)','rgba(34,197,94,0.7)','rgba(245,158,11,0.7)']
+    }],
+    {unit:'Qtd'}
+  );
+  makePieChart('chartMerFarol',['Verde','Amarelo','Vermelho','N/A'],[verde,amar,verm,all.filter(r=>r.Farol==='N/A').length],['#22c55e','#f59e0b','#ef4444','#64748b']);
+
+  const dimMer = getDimByArea('Operações Meridio');
+  const fatoMap = {};
+  all.forEach(r=>{ fatoMap[r.ID_Indicador]=r; });
+  let html = '';
+  dimMer.forEach(dim=>{ html += buildKpiCard(fatoMap[dim.ID_Indicador]||null, dim); });
+  document.getElementById('mer-cards').innerHTML = html || '<div class="no-data-msg"><span class="nd-icon">📭</span>Sem dados Meridio</div>';
+}
+
+// ====================== TÁTICO ======================
+function renderTatico() {
+  const tatDim = DASHBOARD_DATA.DIM_Indicadores.filter(d=>d.Nivel==='Tático');
+  const subAreas = [...new Set(tatDim.map(d=>(d.Area||'').trim()).filter(Boolean))];
+  const owners = [...new Set(tatDim.map(d=>(d.Subarea_Responsavel||'').trim()).filter(Boolean))];
+  let html = '';
+  // Group by Owner (responsável)
+  owners.forEach(owner=>{
+    const ownerDim = tatDim.filter(d=>d.Subarea_Responsavel===owner);
+    const areaName = ownerDim[0]?.Area || '';
+    html += `<div class="area-section">
+      <div class="area-header">
+        <div class="area-header-icon" style="background:rgba(20,184,166,0.15)">👤</div>
+        <div class="area-header-info">
+          <h3>${owner}</h3>
+          <p>${areaName ? 'Sub-área: '+areaName : 'Indicadores Táticos'} — ${ownerDim.length} indicadores</p>
+        </div>
+      </div>
+      <div class="area-body">
+        <div class="kpi-grid kpi-grid-auto">`;
+    ownerDim.forEach(dim=>{
+      html += buildKpiCard(null, dim);
+    });
+    html += `</div></div></div>`;
+  });
+  document.getElementById('tatico-content').innerHTML = html || '<div class="no-data-msg"><span class="nd-icon">📭</span>Sem indicadores táticos</div>';
+}
+
+// ====================== TODOS ======================
+function renderTodos() {
+  const data = activeMes==='todos' ? DASHBOARD_DATA.FATO_Lancamentos : DASHBOARD_DATA.FATO_Lancamentos.filter(r=>r['mês']===activeMes);
+  let rows = '';
+  data.forEach(r=>{
+    const nLevel = {'Gerencial':'nivel-gerencial','Área':'nivel-area','Tático':'nivel-tatico'}[r.Nivel]||'nivel-area';
+    rows += `<tr>
+      <td>${r.Indicador||'—'}</td>
+      <td><span class="nivel-badge ${nLevel}">${r.Nivel||'—'}</span></td>
+      <td>${r.Area||'—'}</td>
+      <td>${r.Subarea_Responsavel||'—'}</td>
+      <td>${r['mês']||r.Data_Referencia||'—'}</td>
+      <td><strong>${formatVal(r.Valor_Dashboard??r.Valor, r.Unidade)}</strong></td>
+      <td>${r.Meta && r.Meta>0 ? formatVal(r.Meta, r.Unidade) : '—'}</td>
+      <td>${getFarolPill(r.Farol)}</td>
+      <td style="max-width:200px;font-size:.75rem;">${r.Observacao||'—'}</td>
+    </tr>`;
+  });
+  document.getElementById('allTableBody').innerHTML = rows || '<tr><td colspan="9" style="text-align:center;padding:2rem;color:var(--text-muted);">Sem dados no período</td></tr>';
+}
+
+// ====================== TICKER ======================
+function updateTicker() {
+  const data = DASHBOARD_DATA.FATO_Lancamentos.filter(r=>r.Observacao);
+  if (data.length===0) { document.getElementById('tickerWrap').style.display='none'; return; }
+  document.getElementById('tickerWrap').style.display='block';
+  const items = data.map(r=>`<span><strong>${getFarolIcon(r.Farol)} ${r.Indicador}:</strong> ${r.Observacao} (${r['mês']||r.Data_Referencia||''})</span>`).join('');
+  document.getElementById('ticker').innerHTML = items;
+}
+
+// ====================== VIEW CONTROL ======================
+function showView(view) {
+  currentView = view;
+  document.querySelectorAll('.view-panel').forEach(p=>p.classList.remove('active'));
+  document.getElementById('view-'+view)?.classList.add('active');
+  document.querySelectorAll('.nav-tab').forEach(t=>t.classList.remove('active'));
+  document.getElementById('tab-'+view)?.classList.add('active');
+  window.scrollTo(0,0);
+}
+
+// ====================== AUTOPLAY ======================
+function toggleAutoplay() {
+  autoplayActive = !autoplayActive;
+  const btn = document.getElementById('btnAutoplay');
+  if (autoplayActive) {
+    btn.textContent = '⏸ Parar Rotação';
+    btn.classList.add('active');
+    runAutoplay();
+  } else {
+    btn.textContent = '▶ Auto-Rotação';
+    btn.classList.remove('active');
+    if (autoplayTimer) clearTimeout(autoplayTimer);
+    document.getElementById('autoplayFill').style.transition='none';
+    document.getElementById('autoplayFill').style.width='0%';
+  }
+}
+
+function runAutoplay() {
+  if (!autoplayActive) return;
+  const fill = document.getElementById('autoplayFill');
+  fill.style.transition = 'none';
+  fill.style.width = '0%';
+  setTimeout(()=>{
+    fill.style.transition = `width ${AUTOPLAY_DURATION}ms linear`;
+    fill.style.width = '100%';
+  }, 50);
+  showView(VIEWS[autoplayIndex]);
+  autoplayIndex = (autoplayIndex+1) % VIEWS.length;
+  autoplayTimer = setTimeout(runAutoplay, AUTOPLAY_DURATION);
+}
+
+// ====================== FILE UPLOAD ======================
+function handleFileUpload(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const statusEl = document.getElementById('uploadStatus');
+  statusEl.style.display='block';
+  if (file.name.endsWith('.json')) {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const data = JSON.parse(e.target.result);
+        if (data.FATO_Lancamentos && data.DIM_Indicadores) {
+          DASHBOARD_DATA = data;
+          localStorage.setItem('dashboardData', JSON.stringify(data));
+          statusEl.innerHTML = '<span style="color:var(--verde)">✅ Dados carregados com sucesso! Dashboard atualizado.</span>';
+          // Reset filters
+          document.getElementById('filtroMes').innerHTML = '<option value="todos">Todos os meses</option>';
+          document.getElementById('filtroArea').innerHTML = '<option value="todos">Todas as áreas</option>';
+          initFilters();
+          updateLastUpdated();
+          showView('gerencial');
+        } else {
+          statusEl.innerHTML = '<span style="color:var(--vermelho)">❌ Formato JSON inválido. Certifique-se que contém FATO_Lancamentos e DIM_Indicadores.</span>';
+        }
+      } catch(err) {
+        statusEl.innerHTML = '<span style="color:var(--vermelho)">❌ Erro ao ler JSON: '+err.message+'</span>';
+      }
+    };
+    reader.readAsText(file);
+  } else {
+    statusEl.innerHTML = '<span style="color:var(--amarelo)">⚠️ Por enquanto, apenas arquivos .json são suportados. Use o script Python para exportar o Excel para JSON.</span>';
+  }
+}
+
+// ====================== URL FETCH ======================
+function setJsonUrl() {
+  const url = document.getElementById('jsonUrlInput').value.trim();
+  if (!url) return;
+  jsonUrlSaved = url;
+  localStorage.setItem('dashboardJsonUrl', url);
+  document.getElementById('urlStatus').innerHTML = '<span style="color:var(--verde)">✅ URL salva. Atualização automática a cada 5 minutos ativada.</span>';
+  setAutoFetch();
+}
+
+function setAutoFetch() {
+  if (!jsonUrlSaved) return;
+  fetchFromUrl();
+  setInterval(fetchFromUrl, 5*60*1000);
+}
+
+async function fetchFromUrl() {
+  if (!jsonUrlSaved) return;
+  const statusEl = document.getElementById('urlStatus');
+  try {
+    const resp = await fetch(jsonUrlSaved + '?t=' + Date.now());
+    if (!resp.ok) throw new Error('HTTP '+resp.status);
+    const data = await resp.json();
+    if (data.FATO_Lancamentos && data.DIM_Indicadores) {
+      DASHBOARD_DATA = data;
+      localStorage.setItem('dashboardData', JSON.stringify(data));
+      document.getElementById('filtroMes').innerHTML = '<option value="todos">Todos os meses</option>';
+      document.getElementById('filtroArea').innerHTML = '<option value="todos">Todas as áreas</option>';
+      initFilters();
+      updateLastUpdated();
+      if (statusEl) statusEl.innerHTML = '<span style="color:var(--verde)">✅ Dados atualizados de '+jsonUrlSaved+' em '+(new Date().toLocaleTimeString('pt-BR'))+'</span>';
+    }
+  } catch(e) {
+    if (statusEl) statusEl.innerHTML = '<span style="color:var(--amarelo)">⚠️ Não foi possível buscar dados: '+e.message+'</span>';
+  }
+}
+
+// Drag & drop
+const uz = document.getElementById('uploadZone');
+uz.addEventListener('dragover', e=>{e.preventDefault(); uz.style.borderColor='var(--accent)';});
+uz.addEventListener('dragleave', ()=>{uz.style.borderColor='var(--border)';});
+uz.addEventListener('drop', e=>{
+  e.preventDefault(); uz.style.borderColor='var(--border)';
+  const files = e.dataTransfer.files;
+  if (files.length) { document.getElementById('fileInput').files = files; handleFileUpload({target:{files}}); }
+});
+</script>
+</body>
+</html>
